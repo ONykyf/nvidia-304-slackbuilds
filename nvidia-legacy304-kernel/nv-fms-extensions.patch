@@ -1,0 +1,11 @@
+--- NVIDIA-Linux-x86_64-304.137/kernel/conftest.sh.orig	2026-06-03 14:14:53.256712126 +0300
++++ NVIDIA-Linux-x86_64-304.137/kernel/conftest.sh	2026-06-03 14:11:24.110589225 +0300
+@@ -118,7 +118,7 @@
+ }
+ 
+ build_cflags() {
+-    BASE_CFLAGS="-std=gnu17 -O2 -D__KERNEL__ \
++    BASE_CFLAGS="-std=gnu17 -O2 -fms-extensions -D__KERNEL__ \
+ -DKBUILD_BASENAME=\"#conftest$$\" -DKBUILD_MODNAME=\"#conftest$$\" \
+ -nostdinc -isystem $ISYSTEM \
+ -Wno-implicit-function-declaration -Wno-strict-prototypes -Wno-incompatible-pointer-types"

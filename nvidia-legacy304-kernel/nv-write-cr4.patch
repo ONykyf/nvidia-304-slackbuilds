@@ -1,0 +1,125 @@
+--- NVIDIA-Linux-x86_64-304.137/kernel/conftest.sh.orig	2026-06-03 21:14:52.342095486 +0300
++++ NVIDIA-Linux-x86_64-304.137/kernel/conftest.sh	2026-06-03 21:15:34.280213726 +0300
+@@ -98,6 +98,7 @@
+     FILES="$FILES generated/utsrelease.h"
+     FILES="$FILES linux/efi.h"
+     FILES="$FILES linux/kconfig.h"
++    FILES="$FILES linux/kprobes.h"
+     FILES="$FILES linux/screen_info.h"
+     FILES="$FILES linux/semaphore.h"
+     FILES="$FILES linux/printk.h"
+--- NVIDIA-Linux-x86_64-304.137/kernel/nv-pat.c.orig	2026-06-03 21:14:51.846002567 +0300
++++ NVIDIA-Linux-x86_64-304.137/kernel/nv-pat.c	2026-06-03 21:26:14.200515087 +0300
+@@ -16,6 +16,10 @@
+ #include "nv-reg.h"
+ #include "nv-pat.h"
+ 
++#if !defined(NV_WRITE_CR4_PRESENT) && defined(NV_LINUX_KPROBES_H_PRESENT)
++#include <linux/kprobes.h>
++#endif
++
+ int nv_pat_mode = NV_PAT_MODE_DISABLED;
+ 
+ #if defined(NV_ENABLE_PAT_SUPPORT)
+@@ -24,6 +28,32 @@
+  * kernels that do not modify the PAT to include a write-combining
+  * entry.
+  */
++
++#if defined(NV_WRITE_CR4_PRESENT)
++
++#define NV_READ_CR4()       read_cr4()
++#define NV_WRITE_CR4(cr4)   write_cr4(cr4)
++
++#elif defined(NV_LINUX_KPROBES_H_PRESENT)
++
++static struct kprobe kp;
++
++typedef void (*native_write_cr4_t)(unsigned long);
++static native_write_cr4_t p_native_write_cr4 = NULL;
++
++typedef unsigned long (*native_read_cr4_t)(void);
++static native_read_cr4_t p_native_read_cr4 = NULL;
++
++#define NV_WRITE_CR4(cr4)   (*p_native_write_cr4)(cr4)
++#define NV_READ_CR4()       (*p_native_read_cr4)()
++
++#else
++
++#define NV_READ_CR4()       __read_cr4()
++#define NV_WRITE_CR4(cr4)   __write_cr4(cr4)
++
++#endif
++
+ static unsigned long orig_pat1, orig_pat2;
+ 
+ #define NV_READ_PAT_ENTRIES(pat1, pat2)   rdmsr(0x277, (pat1), (pat2))
+@@ -65,7 +95,32 @@
+                 "NVRM: CPU does not support the PAT, falling back to MTRRs.\n");
+             return NV_PAT_MODE_DISABLED;
+         }
++#if !defined(NV_WRITE_CR4_PRESENT) && defined(NV_LINUX_KPROBES_H_PRESENT)
++        if (p_native_write_cr4 == NULL) {
++            kp.symbol_name = "native_write_cr4";
++            if (register_kprobe(&kp) < 0) {
++                nv_printf(NV_DBG_ERRORS,
++                    "NVRM: could not get \'native_write_cr4\' symbol.\n");
++                unregister_kprobe(&kp);
++                return NV_PAT_MODE_DISABLED;
++            }
++            p_native_write_cr4 = (native_write_cr4_t)kp.addr;
++            unregister_kprobe(&kp);
++        }
++
++        if (p_native_read_cr4 == NULL) {
++            kp.symbol_name = "native_read_cr4";
++            if (register_kprobe(&kp) < 0) {
++                nv_printf(NV_DBG_ERRORS,
++                    "NVRM: could not get \'native_read_cr4\' symbol.\n");
++                unregister_kprobe(&kp);
++                return NV_PAT_MODE_DISABLED;
++            }
++            p_native_read_cr4 = (native_read_cr4_t)kp.addr;
++            unregister_kprobe(&kp);
++        }
++#endif
+     }
+ 
+     NV_READ_PAT_ENTRIES(pat1, pat2);
+     PAT_WC_index = 0xf;
+--- NVIDIA-Linux-x86_64-304.137/kernel/nv-linux.h.orig	2026-06-03 21:14:52.269575798 +0300
++++ NVIDIA-Linux-x86_64-304.137/kernel/nv-linux.h	2026-06-03 21:14:52.347212159 +0300
+@@ -412,33 +412,6 @@
+ #define NV_SPIN_UNLOCK_WAIT(lock) spin_unlock_wait(lock)
+ #endif
+ 
+-#if defined(NVCPU_X86)
+-#ifndef write_cr4
+-#define write_cr4(x) __asm__ ("movl %0,%%cr4" :: "r" (x));
+-#endif
+-
+-#ifndef read_cr4
+-#define read_cr4()                                  \
+- ({                                                 \
+-      unsigned int __cr4;                           \
+-      __asm__ ("movl %%cr4,%0" : "=r" (__cr4));     \
+-      __cr4;                                        \
+-  })
+-#endif
+-
+-#ifndef wbinvd
+-#define wbinvd() __asm__ __volatile__("wbinvd" ::: "memory");
+-#endif
+-#endif /* defined(NVCPU_X86) */
+-
+-#if defined(NV_WRITE_CR4_PRESENT)
+-#define NV_READ_CR4()       read_cr4()
+-#define NV_WRITE_CR4(cr4)   write_cr4(cr4)
+-#else
+-#define NV_READ_CR4()       __read_cr4()
+-#define NV_WRITE_CR4(cr4)   __write_cr4(cr4)
+-#endif
+-
+ #ifndef get_cpu
+ #define get_cpu() smp_processor_id()
+ #define put_cpu()

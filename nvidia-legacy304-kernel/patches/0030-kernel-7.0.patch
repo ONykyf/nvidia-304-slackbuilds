@@ -1,0 +1,38 @@
+diff -ruN -x nvidia.mod kernel-dkms/nv-linux.h kernel/nv-linux.h
+--- a/nv-linux.h	2025-09-27 23:27:28.957532882 +0000
++++ b/nv-linux.h	2026-05-18 00:00:00.000000000 +0000
+@@ -197,6 +197,17 @@
+ #else
+ #include <linux/tty.h>              /* screen_info                      */
+ #endif
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
++/* The global screen_info variable was removed in Linux 7.0.
++ * sysfb_primary_display (from linux/sysfb.h) provides the same boot display info. */
++#include <linux/sysfb.h>            /* sysfb_primary_display            */
++#endif
+ #endif
++
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
++// Rel. commit "treewide: Remove in_irq()" (Thomas Gleixner, 2024)
++// in_irq() was removed in Linux 7.0; in_hardirq() is the direct replacement.
++static inline int in_irq(void) { return in_hardirq(); }
++#endif
+ 
+ #if defined(NV_EFI_ENABLED_PRESENT) && defined(NV_EFI_ENABLED_ARGUMENT_COUNT)
+diff -ruN -x nvidia.mod kernel-dkms/nv.c kernel/nv.c
+--- a/nv.c	2025-09-27 22:51:30.395589689 +0000
++++ b/nv.c	2026-05-18 00:00:00.000000000 +0000
+@@ -1604,7 +1604,13 @@
+ 
+ #if !defined(NV_VMWARE) && !defined(KERNEL_2_4) && \
+   (defined(NVCPU_X86) || defined(NVCPU_X86_64))
++// Rel. commit "x86/boot: Remove global screen_info variable"
++// The global screen_info was removed in Linux 7.0; use sysfb_primary_display.screen instead.
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
++        if (nv->primary_vga && (sysfb_primary_display.screen.orig_video_isVGA != 0x01))
++#else
+         if (nv->primary_vga && (screen_info.orig_video_isVGA != 0x01))
++#endif
+         {
+             if (!nv_fbdev_failure_detected)
+             {

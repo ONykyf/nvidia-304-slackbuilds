@@ -1,0 +1,24 @@
+--- nvidia-installer-304.137/command-list.c.orig	2026-06-02 16:41:55.393722240 +0300
++++ nvidia-installer-304.137/command-list.c	2026-06-02 16:43:34.436999044 +0300
+@@ -343,15 +343,13 @@
+      * manpage for details).  Patch provided by Nigel Spowage
+      * <Nigel.Spowage@energis.com>
+      */
+-    
+-    if ( op->kernel_name && op->kernel_name[0] ) {
+-    	tmp = nvstrcat(op->utils[DEPMOD], " -aq ", op->kernel_name, NULL);
+-    } else {
+-    	tmp = nvstrcat(op->utils[DEPMOD], " -aq", NULL);
++
++    if (!op->no_kernel_module) {
++        tmp = nvstrcat(op->utils[DEPMOD], " -aq ", op->kernel_name, NULL);
++        add_command(c, RUN_CMD, tmp);
++        nvfree(tmp);
+     }
+-    add_command(c, RUN_CMD, tmp);
+-    nvfree(tmp);
+-    
++
+     /*
+      * if on SuSE or United Linux, also do `/usr/bin/chrc.config
+      * SCRIPT_3D no`

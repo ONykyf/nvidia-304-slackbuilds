@@ -1,0 +1,36 @@
+#!/bin/sh
+
+NVIDIA_VERSION=304.137
+
+GL_LIB=libGL.so.1
+
+NGL_LIB=`echo $GL_LIB | cut -f 1-2 -d '.'`.$NVIDIA_VERSION
+
+CL_LIB=libOpenCL.so.1
+
+if uname -m | grep 'x86_64' >/dev/null ; then
+  LIBDIRSUFFIX="64"
+else
+  LIBDIRSUFFIX=""
+fi
+
+cd /usr/lib$LIBDIRSUFFIX
+
+if lsmod | grep 'nvidia' >/dev/null ; then
+  if [ -x nvidia/$NGL_LIB ] ; then
+    ln -sf nvidia/$NGL_LIB $GL_LIB
+  fi
+  if [ -x nvidia/$CL_LIB.0.0 ] ; then
+    ln -sf nvidia/$CL_LIB.0.0 $CL_LIB
+  fi
+else
+  FILE=`ls $GL_LIB.* | cut -f 1 -d ' '`
+  if [ "$FILE" != "" -a -x $FILE ] ; then
+    ln -sf $FILE $GL_LIB
+  fi
+  if [ -x $CL_LIB.0.0 ] ; then
+    ln -sf $CL_LIB.0.0 $CL_LIB
+  fi
+fi
+
+ldconfig -X
