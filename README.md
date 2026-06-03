@@ -71,14 +71,11 @@ image = /boot/vmlinuz-7.0.3
   append = " module_blacklist=nvidia"
 # Linux bootable partition config ends
 ```
+You can add it (edited if you like) to `/etc/lilo.conf` and re-run `lilo` to choose at boot which drivers to use. This adds an additional safety margin in case something goes wrong after an upgrade or an experiment. If you use, say, GRUB2 instead of LILO, you can take kernel options from here to use in `grub.cfg`.
 
 Note that `/boot/initrd-${KERNEL}.img` may be overwritten, e.g., when a kernel is reinstalled. If you encounter problems after this, then running `nvidia-prepare-boot` (and `lilo`, if used) with this kernel booted restores the correct initrd image and points the bootloader to its location.
 
 Version 304 of the NVidia driver is not kernel modesetting capable and hence lacks `nvidia_modeset` kernel module, and DRM functionality is implemented in `nvidia` module, i.e., there is no separate `nvidia_drm`.
-
-You can add it (edited if you like) to `/etc/lilo.conf` and re-run `lilo` to choose at boot which drivers to use. This adds an additional safety margin in case something goes wrong after an upgrade or an experiment. If you use, say,
-GRUB2 instead of LILO, you can take kernel options from here to use
-in `grub.cfg`.
 
 *Important note:* you DON'T need to blacklist nouveau in `/etc/modprobe.d/*`. If there is a file that contains a line `blacklist nouveau`, remove it, or unistall `xf86-video-nouveau-blacklist-1.0-noarch-1.txz` package if it has been installed.
 
