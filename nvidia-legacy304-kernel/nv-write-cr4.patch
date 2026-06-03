@@ -33,7 +33,7 @@
 +
 +#elif defined(NV_LINUX_KPROBES_H_PRESENT)
 +
-+static struct kprobe kp;
++static struct kprobe kp = {};
 +
 +typedef void (*native_write_cr4_t)(unsigned long);
 +static native_write_cr4_t p_native_write_cr4 = NULL;
