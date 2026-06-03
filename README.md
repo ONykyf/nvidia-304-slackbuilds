@@ -1,4 +1,4 @@
-﻿# nvidia-304-slackbuilds
+# nvidia-304-slackbuilds
 
 SlackBuilds with the necessary sources to build legacy NVidia drivers (kernel modules, X drivers, and nvidia utilities) version 304 (for Curie cards and older, 32 bit and 64 bit).
 
@@ -42,7 +42,7 @@ Clone the repository with Git like so:
 git clone https://github.com/ONykyf/nvidia-304-slackbuilds.git
 cd nvidia-304-slackbuilds
 ```
-Using this method gives you the opportunity to later simply update the repository by running `git pull origin main` in `nvidia-304-slackbuilds` directory. Please be advised that the initial download of the Git repository is about 220 Mb.
+Using this method gives you the opportunity to later simply update the repository by running `git pull origin main` in `nvidia-304-slackbuilds` directory. Please be advised that the initial download of the Git repository is about 218 Mb.
 
 ## How to build and install
 

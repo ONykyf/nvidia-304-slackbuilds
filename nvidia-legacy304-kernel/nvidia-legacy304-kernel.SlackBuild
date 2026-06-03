@@ -39,18 +39,6 @@ PKGTYPE=${PKGTYPE:-tgz}
 KERNEL=${KERNEL:-$(uname -r)}
 KERNELPATH=${KERNELPATH:-/lib/modules/${KERNEL}/build}
 
-if [ ! -r $KERNELPATH/.config ] ; then
-  echo "$KERNELPATH/.config not found, failed!"
-  echo "A configured linux kernel needed"
-  exit 1
-fi
-
-if [ ! -r $KERNELPATH/Module.symvers ] ; then
-  echo "$KERNELPATH/Module.symvers not found, failed!"
-  echo "A configured linux kernel needed"
-  exit 1
-fi
-
 PKGVER=${VERSION}_$(echo $KERNEL | tr - _)
 
 if [ -z "$ARCH" ]; then
