@@ -1,0 +1,437 @@
+--- NVIDIA-Linux-x86_64-304.137/kernel/conftest.sh.orig	2026-06-04 22:35:41.952152517 +0300
++++ NVIDIA-Linux-x86_64-304.137/kernel/conftest.sh	2026-06-04 22:45:26.248492824 +0300
+@@ -91,7 +91,13 @@
+     #
+     FILES="asm/system.h"
+     FILES="$FILES drm/drmP.h"
++    FILES="$FILES drm/drm_drv.h"
++    FILES="$FILES drm/drm_ioctl.h"
++    FILES="$FILES drm/drm_file.h"
+     FILES="$FILES drm/drm_gem.h"
++    FILES="$FILES drm/drm_legacy.h"
++    FILES="$FILES drm/drm_pci.h"
++    FILES="$FILES drm/drm_print.h"
+     FILES="$FILES drm/drm_agpsupport.h"
+     FILES="$FILES generated/autoconf.h"
+     FILES="$FILES generated/compile.h"
+@@ -1552,21 +1558,26 @@
+             CODE="
+             #if defined(NV_DRM_DRMP_H_PRESENT)
+             #include <drm/drmP.h>
+-            #else
++            #endif
++
++            #if defined(NV_DRM_DRM_DRV_H_PRESENT)
+             #include <drm/drm_drv.h>
+-            #include <drm/drm_prime.h>
+             #endif
++
+             #if !defined(CONFIG_DRM) && !defined(CONFIG_DRM_MODULE)
+             #error DRM not enabled
+             #endif
+             void conftest_drm_available(void) {
+                 struct drm_driver drv;
+-                drv.gem_prime_pin = 0;
+-                drv.gem_prime_get_sg_table = 0;
+-                drv.gem_prime_vmap = 0;
+-                drv.gem_prime_vunmap = 0;
+-                (void)drm_gem_prime_import;
+-                (void)drm_gem_prime_export;
++
++                /* 2013-10-02 1bb72532ac260a2d3982b40bdd4c936d779d0d16 */
++                (void)drm_dev_alloc;
++
++                /* 2013-10-02 c22f0ace1926da399d9a16dfaf09174c1b03594c */
++                (void)drm_dev_register;
++
++                /* 2013-10-02 c3a49737ef7db0bdd4fcf6cf0b7140a883e32b2a */
++                (void)drm_dev_unregister;
+             }"
+ 
+             compile_check_conftest "$CODE" "NV_DRM_AVAILABLE" "" "generic"
+@@ -2053,6 +2064,7 @@
+ 
+             compile_check_conftest "$CODE" "NV_NODE_END_PFN_PRESENT" "" "functions"
+         ;;
++
+         get_user_pages_remote)
+             #
+             # Determine if the function get_user_pages_remote() is
+@@ -2139,6 +2151,7 @@
+                 echo "#undef NV_GET_USER_PAGES_REMOTE_HAS_LOCKED_ARG" | append_conftest "functions"
+             fi
+         ;;
++
+         arch_phys_wc_add)
+             #
+             # Determine if the arch_phys_wc_add() function is present.
+@@ -2154,6 +2167,7 @@
+ 
+             compile_check_conftest "$CODE" "NV_ARCH_PHYS_WC_ADD_PRESENT" "" "functions"
+         ;;
++
+         drm_driver_unload_has_int_return_type)
+             #
+             # Determine if drm_driver::unload() returns integer value, which has
+@@ -2173,6 +2187,107 @@
+ 
+             compile_check_conftest "$CODE" "NV_DRM_DRIVER_UNLOAD_HAS_INT_RETURN_TYPE" "" "types"
+         ;;
++
++        drm_device_has_agp)
++            #
++            # Determine if the 'drm_device' structure has a 'agp' field.
++            #
++            # Moved by commit 04dfe19a5ed6 ("drm: Mark AGP implementation
++            # and ioctls as legacy") in v5.14-rc1. No longer compiled in if
++            # CONFIG_DRM_LEGACY is disabled.
++            #
++            CODE="
++            #if defined(NV_DRM_DRMP_H_PRESENT)
++            #include <drm/drmP.h>
++            #endif
++
++            #if defined(NV_DRM_DRM_DEVICE_H_PRESENT)
++            #include <drm/drm_device.h>
++            #endif
++
++            int conftest_drm_device_has_agp(void) {
++                return offsetof(struct drm_device, agp);
++            }"
++
++            compile_check_conftest "$CODE" "NV_DRM_DEVICE_HAS_AGP" "" "types"
++        ;;
++
++        drm_device_has_pdev)
++            #
++            # Determine if the 'drm_device' structure has a 'pdev' field.
++            #
++            # Removed by commit b347e04452ff ("drm: Remove pdev field from
++            # struct drm_device") in v5.14.
++            #
++            CODE="
++            #if defined(NV_DRM_DRMP_H_PRESENT)
++            #include <drm/drmP.h>
++            #endif
++
++            #if defined(NV_DRM_DRM_DEVICE_H_PRESENT)
++            #include <drm/drm_device.h>
++            #endif
++
++            int conftest_drm_device_has_pdev(void) {
++                return offsetof(struct drm_device, pdev);
++            }"
++
++            compile_check_conftest "$CODE" "NV_DRM_DEVICE_HAS_PDEV" "" "types"
++        ;;
++
++        drm_driver_has_date)
++            #
++            # Determine if the 'drm_driver' structure has a 'date' field.
++            #
++            # Removed by commit cb2e1c2136f7 ("drm: remove driver date from
++            # struct drm_driver and all drivers") in linux-next, expected in
++            # v6.14.
++            #
++            CODE="
++            #if defined(NV_DRM_DRMP_H_PRESENT)
++            #include <drm/drmP.h>
++            #endif
++
++            #if defined(NV_DRM_DRM_DRV_H_PRESENT)
++            #include <drm/drm_drv.h>
++            #endif
++
++            int conftest_drm_driver_has_date(void) {
++                return offsetof(struct drm_driver, date);
++            }"
++
++            compile_check_conftest "$CODE" "NV_DRM_DRIVER_HAS_DATE" "" "types"
++        ;;
++
++        drm_driver_has_legacy_dev_list)
++            #
++            # Determine if the 'drm_driver' structure has a 'legacy_dev_list' field.
++            #
++            # drm_driver::device_list was added by:
++            #   2008-11-28  e7f7ab45ebcb54fd5f814ea15ea079e079662f67
++            # and then renamed to drm_driver::legacy_device_list by:
++            #   2013-12-11  b3f2333de8e81b089262b26d52272911523e605f
++            #
++            # The commit 57bb1ee60340 ("drm: Compile out legacy chunks from
++            # struct drm_device") compiles out the legacy chunks like
++            # drm_driver::legacy_dev_list. (5.11)
++            #
++            CODE="
++            #if defined(NV_DRM_DRMP_H_PRESENT)
++            #include <drm/drmP.h>
++            #endif
++
++            #if defined(NV_DRM_DRM_DRV_H_PRESENT)
++            #include <drm/drm_drv.h>
++            #endif
++
++            int conftest_drm_driver_has_legacy_dev_list(void) {
++                return offsetof(struct drm_driver, legacy_dev_list);
++            }"
++
++            compile_check_conftest "$CODE" "NV_DRM_DRIVER_HAS_LEGACY_DEV_LIST" "" "types"
++        ;;
++
+         vmalloc_has_pgprot_t_arg)
+             #
+             # Determine if __vmalloc has the 'pgprot' argument.
+@@ -2192,6 +2307,7 @@
+             compile_check_conftest "$CODE" "NV_VMALLOC_HAS_PGPROT_T_ARG" "" "types"
+ 
+         ;;
++
+     esac
+ }
+ 
+--- NVIDIA-Linux-x86_64-304.137/kernel/nv-drm.c.orig	2026-06-04 22:35:41.517590407 +0300
++++ NVIDIA-Linux-x86_64-304.137/kernel/nv-drm.c	2026-06-04 22:44:59.742105402 +0300
+@@ -93,18 +93,30 @@
+ 
+ #if defined(NV_DRM_DRMP_H_PRESENT)
+ #include <drm/drmP.h>
+-#else
+-#include <uapi/drm/drm.h>
+-#include <uapi/drm/drm_mode.h>
++#endif
+ 
+-#include <drm/drm_agpsupport.h>
+-#include <drm/drm_crtc.h>
++#if defined(NV_DRM_DRM_DRV_H_PRESENT)
+ #include <drm/drm_drv.h>
+-#include <drm/drm_prime.h>
++#endif
++
++#if defined(NV_DRM_DRM_FILE_H_PRESENT)
++#include <drm/drm_file.h>
++#endif
++
++#if defined(NV_DRM_DRM_IOCTL_H_PRESENT)
+ #include <drm/drm_ioctl.h>
+-#include <drm/drm_sysfs.h>
+-#include <drm/drm_vblank.h>
+-#include <drm/drm_device.h>
++#endif
++
++#if defined(NV_DRM_DRM_PCI_H_PRESENT)
++#include <drm/drm_pci.h>
++#endif
++
++#if defined(NV_DRM_DRM_PRINT_H_PRESENT)
++#include <drm/drm_print.h>
++#endif
++
++#if defined(NV_DRM_DRM_LEGACY_H_PRESENT)
++#include <drm/drm_legacy.h>
+ #endif
+ 
+ #if defined(NV_DRM_DRM_AGPSUPPORT_H_PRESENT)
+@@ -115,8 +127,19 @@
+ #include <drm/drm_gem.h>
+ #endif
+ 
+-#include <linux/version.h>
++#if IS_ENABLED(CONFIG_DRM_LEGACY) && defined(NV_DRM_LEGACY_PCI_INIT_PRESENT)
++
++#define nv_drm_pci_init drm_legacy_pci_init
++#define nv_drm_pci_exit drm_legacy_pci_exit
+ 
++#elif defined(NV_DRM_PCI_INIT_PRESENT)
++
++#define nv_drm_pci_init drm_pci_init
++#define nv_drm_pci_exit drm_pci_exit
++
++#else
++
++#if defined(NV_DRM_DEVICE_HAS_AGP)
+ // copied from src:linux (5.9.11-1) drivers/gpu/drm/drm_legacy.h
+ struct nv_drm_agp_mem {
+ 	unsigned long handle;
+@@ -204,6 +227,7 @@
+ 		dev->agp = NULL;
+ 	}
+ }
++#endif
+ 
+ // copied from src:linux (5.9.11-1) drivers/gpu/drm/drm_pci.c
+ static int nv_drm_get_pci_dev(struct pci_dev *pdev,
+@@ -223,7 +247,11 @@
+ 	if (ret)
+ 		goto err_free;
+ 
++#if defined(NV_DRM_DEVICE_HAS_PDEV)
+ 	dev->pdev = pdev;
++#else
++	dev->dev_private = pdev;
++#endif
+ #ifdef __alpha__
+ 	dev->hose = pdev->sysdata;
+ #endif
+@@ -231,21 +259,27 @@
+ 	if (drm_core_check_feature(dev, DRIVER_MODESET))
+ 		pci_set_drvdata(pdev, dev);
+ 
++#if defined(NV_DRM_DEVICE_HAS_AGP)
+ 	nv_drm_pci_agp_init(dev);
++#endif
+ 
+ 	ret = drm_dev_register(dev, ent->driver_data);
+ 	if (ret)
+ 		goto err_agp;
+ 
++#if defined(NV_DRM_DRIVER_HAS_LEGACY_DEV_LIST)
+ 	/* No locking needed since shadow-attach is single-threaded since it may
+ 	 * only be called from the per-driver module init hook. */
+ 	if (drm_core_check_feature(dev, DRIVER_LEGACY))
+ 		list_add_tail(&dev->legacy_dev_list, &driver->legacy_dev_list);
++#endif
+ 
+ 	return 0;
+ 
+ err_agp:
++#if defined(NV_DRM_DEVICE_HAS_AGP)
+ 	nv_drm_pci_agp_destroy(dev);
++#endif
+ 	pci_disable_device(pdev);
+ err_free:
+ 	drm_dev_put(dev);
+@@ -275,7 +309,9 @@
+ 		return -EINVAL;
+ 
+ 	/* If not using KMS, fall back to stealth mode manual scanning. */
++#if defined(NV_DRM_DRIVER_HAS_LEGACY_DEV_LIST)
+ 	INIT_LIST_HEAD(&driver->legacy_dev_list);
++#endif
+ 	for (i = 0; pdriver->id_table[i].vendor != 0; i++) {
+ 		pid = &pdriver->id_table[i];
+ 
+@@ -312,22 +348,28 @@
+  */
+ void nv_drm_pci_exit(struct drm_driver *driver, struct pci_driver *pdriver)
+ {
++#if defined(NV_DRM_DRIVER_HAS_LEGACY_DEV_LIST)
+ 	struct drm_device *dev, *tmp;
++#endif
+ 
+ 	DRM_DEBUG("\n");
+ 
+ 	if (!(driver->driver_features & DRIVER_LEGACY)) {
+ 		WARN_ON(1);
+ 	} else {
++#if defined(NV_DRM_DRIVER_HAS_LEGACY_DEV_LIST)
+ 		list_for_each_entry_safe(dev, tmp, &driver->legacy_dev_list,
+ 					 legacy_dev_list) {
+ 			list_del(&dev->legacy_dev_list);
+ 			drm_put_dev(dev);
+ 		}
++#endif
+ 	}
+ 	DRM_INFO("Module unloaded\n");
+ }
+ 
++#endif
++
+ extern nv_linux_state_t *nv_linux_devices;
+ 
+ static int nv_drm_load(
+@@ -339,7 +381,11 @@
+ 
+     for (nvl = nv_linux_devices; nvl != NULL; nvl = nvl->next)
+     {
++#if defined(NV_DRM_DEVICE_HAS_PDEV)
+         if (nvl->dev == dev->pdev)
++#else
++        if (nvl->dev == dev->dev_private)
++#endif
+         {
+             return 0;
+         }
+@@ -362,7 +408,11 @@
+ 
+     for (nvl = nv_linux_devices; nvl != NULL; nvl = nvl->next)
+     {
++#if defined(NV_DRM_DEVICE_HAS_PDEV)
+         if (nvl->dev == dev->pdev)
++#else
++        if (nvl->dev == dev->dev_private)
++#endif
+         {
+             return 0;
+         }
+@@ -414,7 +464,11 @@
+ 
+     .name = "nvidia-drm",
+     .desc = "NVIDIA DRM driver",
++
++#if defined(NV_DRM_DRIVER_HAS_DATE)
+     .date = "20150116",
++#endif
++
+     .major = 0,
+     .minor = 0,
+     .patchlevel = 0,
+@@ -427,38 +481,7 @@
+ {
+     int ret = 0;
+ #if defined(NV_DRM_AVAILABLE)
+-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
+-    ret = drm_pci_init(&nv_drm_driver, pci_driver);
+-#elif LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0)
+-    ret = drm_legacy_pci_init(&nv_drm_driver, pci_driver);
+-#else
+-    struct pci_dev *pdev = NULL;
+-    const struct pci_device_id *pid;
+-    int i;
+-
+-    INIT_LIST_HEAD(&nv_drm_driver.legacy_dev_list);
+-        for (i = 0; pci_driver->id_table[i].vendor != 0; i++) {
+-                pid = &pci_driver->id_table[i];
+-
+-        /* Loop around setting up a DRM device for each PCI device
+-         * matching our ID and device class.  If we had the internal
+-         * function that pci_get_subsys and pci_get_class used, we'd
+-         * be able to just pass pid in instead of doing a two-stage
+-         * thing.
+-         */
+-                pdev = NULL;
+-                while ((pdev =
+-                        pci_get_subsys(pid->vendor, pid->device, pid->subvendor,
+-                                       pid->subdevice, pdev)) != NULL) {
+-                        if ((pdev->class & pid->class_mask) != pid->class)
+-                                continue;
+-
+-                        /* stealth mode requires a manual probe */
+-                        pci_dev_get(pdev);
+-                        nv_drm_get_pci_dev(pdev, pid, &nv_drm_driver);
+-                }
+-        }
+-#endif
++    ret = nv_drm_pci_init(&nv_drm_driver, pci_driver);
+ #endif
+     return ret;
+ }
+@@ -468,17 +491,7 @@
+ )
+ {
+ #if defined(NV_DRM_AVAILABLE)
+-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
+-    drm_pci_exit(&nv_drm_driver, pci_driver);
+-#elif LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0)
+-    drm_legacy_pci_exit(&nv_drm_driver, pci_driver);
+-#else
+-    struct drm_device *dev, *tmp;
+-    list_for_each_entry_safe(dev, tmp, &nv_drm_driver.legacy_dev_list, legacy_dev_list) {
+-        list_del(&dev->legacy_dev_list);
+-        drm_put_dev(dev);
+-    }
+-    DRM_INFO("Module unloaded\n");
+-#endif
++    nv_drm_pci_exit(&nv_drm_driver, pci_driver);
+ #endif
+ }
++

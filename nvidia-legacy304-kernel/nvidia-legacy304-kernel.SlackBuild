@@ -130,6 +130,10 @@ cp conftest.sh conftest.deb
 # Here are additional patches
 patch -p2 < $CWD/nv-fms-extensions.patch
 patch -p2 < $CWD/nv-write-cr4.patch
+#patch -p2 -b -z .orig < $CWD/nv-drm-available.patch
+#exit 1
+patch -p2 < $CWD/nv-drm-available.patch
+patch -p2 < $CWD/nv-drm-fop-flags.patch
 $CWD/tools/get_defined304.sh
 
 $CWD/tools/split_conftest304.sh
