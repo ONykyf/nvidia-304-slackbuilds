@@ -2,7 +2,7 @@
 
 SlackBuilds with the necessary sources to build legacy NVidia drivers (kernel modules, X drivers, and nvidia utilities) version 304 (for Curie cards and older, 32 bit and 64 bit).
 
-This is a work in progress based on a [Slackware package](https://www.linuxquestions.org/questions/slackware-14/nvidia-legacy304-kernel-on-current-4175700054/page2.html#post6321261) from JayByrd at [linuxquestions.org](https://www.linuxquestions.org/questions/slackware-14/) and Connor Martin’s [fork](https://github.com/MajorCadence/nvidia-304) of [https://github.com/flydiscohuebr/nvidia-304](https://github.com/flydiscohuebr/nvidia-304).
+WARNING!!! Not yet functional, this is a work in progress based on a [Slackware package](https://www.linuxquestions.org/questions/slackware-14/nvidia-legacy304-kernel-on-current-4175700054/page2.html#post6321261) from JayByrd at [linuxquestions.org](https://www.linuxquestions.org/questions/slackware-14/) and Connor Martin’s [fork](https://github.com/MajorCadence/nvidia-304) of [https://github.com/flydiscohuebr/nvidia-304](https://github.com/flydiscohuebr/nvidia-304).
 
 It is an attempt to adapt slackbuilds for NVidia 340 from [nvidia-340-390-470-580-slackbuilds](https://github.com/Onykyf/nvidia-340-390-470-580-slackbuilds).
 The package is suited to be used with [XLibre](https://github.com/ONykyf/X11Libre-SlackBuild) xserver on Slackware and uses some Xlibre-specific directives in `/usr/share/X11/xorg.conf.d/10-{nvidia,nvidia-modules}.conf`, but should work well with Xorg xserver-1.19 (not xserver-1.20 because of ABI change!) if several lines in these config files are adjusted.
